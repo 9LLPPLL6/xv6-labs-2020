@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "spinlock.h": "c",
+        "memlayout.h": "c",
+        "proc.h": "c",
+        "defs.h": "c"
+    }
+}

@@ -5,6 +5,7 @@
 #include "defs.h"
 
 volatile static int started = 0;
+extern pagetable_t kernel_pagetable;  //the kernel's page table
 
 // start() jumps here in supervisor mode on all CPUs.
 void
@@ -14,13 +15,13 @@ main()
     consoleinit();
 #if defined(LAB_PGTBL) || defined(LAB_LOCK)
     statsinit();
-#endif
+#endif 
     printfinit();
     printf("\n");
     printf("xv6 kernel is booting\n");
     printf("\n");
     kinit();         // physical page allocator
-    kvminit();       // create kernel page table
+    kvminit(&kernel_pagetable);       // create kernel page table
     kvminithart();   // turn on paging
     procinit();      // process table
     trapinit();      // trap vectors

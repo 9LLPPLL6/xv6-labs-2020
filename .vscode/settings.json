@@ -3,5 +3,10 @@
     "editor.fontLigatures": false,
     "cmake.configureSettings": {
         
+    },
+    "files.associations": {
+        "types.h": "c",
+        "memlayout.h": "c",
+        "param.h": "c"
     }
 }

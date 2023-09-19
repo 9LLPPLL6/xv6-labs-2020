@@ -268,6 +268,9 @@ void userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
+  // Copy user page table to process's kernel page table
+  uint64 pa = walkaddr(p->pagetable, 0);
+  mapkpages(p->kpagetable, 0, PGSIZE, pa, PTE_R | PTE_W | PTE_X);
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;     // user program counter
@@ -295,10 +298,23 @@ int growproc(int n)
     {
       return -1;
     }
+
+    for (uint64 va = PGROUNDUP(p->sz); va < sz; va += PGSIZE)
+    {
+      uint64 pa = walkaddr(p->pagetable, va);
+      mapkpages(p->kpagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_X);
+    }
   }
   else if (n < 0)
   {
     sz = uvmdealloc(p->pagetable, sz, sz + n);
+
+    for (uint64 va = PGROUNDDOWN(p->sz + n); va < p->sz; va += PGSIZE)
+    {
+      pte_t *pte;
+      pte = walk(p->kpagetable, va, 0);
+      *pte = 0;
+    }
   }
   p->sz = sz;
   return 0;
@@ -326,6 +342,22 @@ int fork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  // Copy process's kernel page table
+  pagetable_t kpagetable = np->kpagetable;
+  uint64 pa;
+  for (uint64 va = 0; (va < np->sz) && (va < 0xc000000); va += PGSIZE)
+  {
+    pte_t *pte;
+    pte = walk(np->pagetable, va, 0);
+    if (*pte & PTE_V)
+    {
+      pa = PTE2PA(*pte);
+      mapkpages(kpagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_X);
+    }
+    // pa = walkaddr(np->pagetable, va);
+    // mappages(kpagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_X);
+  }
 
   np->parent = p;
 
